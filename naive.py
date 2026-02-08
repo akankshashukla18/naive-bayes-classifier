@@ -9,17 +9,13 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# -----------------------------
-# Page config
-# -----------------------------
+# Page configuration
 st.set_page_config(page_title="IMDB Sentiment Analysis")
 
-st.title("🎬 IMDB Movie Review Sentiment Analysis")
-st.write("Naive Bayes + TF-IDF based sentiment prediction")
+st.title("IMDB Movie Review Sentiment Analysis")
+st.write("Naive Bayes and TF-IDF based sentiment prediction")
 
-# -----------------------------
 # Create dataset inside code
-# -----------------------------
 @st.cache_data
 def load_data():
     data = {
@@ -35,24 +31,24 @@ def load_data():
             "The plot was weak and disappointing",
             "A wonderful and inspiring movie"
         ],
-        "sentiment": [
-            1, 1, 1, 0, 0, 0, 1, 0, 0, 1
-        ]
+        "sentiment": [1, 1, 1, 0, 0, 0, 1, 0, 0, 1]
     }
     return pd.DataFrame(data)
 
 df = load_data()
 
-# -----------------------------
-# Train model
-# -----------------------------
+# Train the model
 @st.cache_resource
 def train_model(df):
     X = df["review"]
     y = df["sentiment"]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y
     )
 
     tfidf = TfidfVectorizer(stop_words="english")
@@ -69,13 +65,11 @@ def train_model(df):
 
 model, tfidf, y_test, y_pred = train_model(df)
 
-# -----------------------------
 # Model performance
-# -----------------------------
-st.subheader("📊 Model Performance")
+st.subheader("Model Performance")
 
 accuracy = accuracy_score(y_test, y_pred)
-st.write(f"**Accuracy:** {accuracy:.2f}")
+st.write(f"Accuracy: {accuracy:.2f}")
 
 if st.checkbox("Show Classification Report"):
     report = classification_report(y_test, y_pred, output_dict=True)
@@ -99,18 +93,14 @@ if st.checkbox("Show Confusion Matrix"):
     ax.set_title("Confusion Matrix")
     st.pyplot(fig)
 
-# -----------------------------
 # Prediction function
-# -----------------------------
 def predict_sentiment(review):
     review_tfidf = tfidf.transform([review])
     prediction = model.predict(review_tfidf)
-    return "Positive 😊" if prediction[0] == 1 else "Negative 😞"
+    return "Positive" if prediction[0] == 1 else "Negative"
 
-# -----------------------------
 # User input
-# -----------------------------
-st.subheader("✍️ Enter a Movie Review")
+st.subheader("Enter a Movie Review")
 
 user_review = st.text_area(
     "Type your review:",
@@ -123,7 +113,8 @@ if st.button("Predict Sentiment"):
         st.warning("Please enter a review.")
     else:
         result = predict_sentiment(user_review)
-        st.success(f"**Predicted Sentiment:** {result}")
+        st.success(f"Predicted Sentiment: {result}")
+
 
 
 
