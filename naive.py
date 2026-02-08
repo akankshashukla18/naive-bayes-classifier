@@ -1,5 +1,6 @@
+import streamlit as st
 import pandas as pd
-import numpy as np
+
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -7,42 +8,104 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-df=pd.read_csv("/kaggle/dataset/imdb dataset.csv")
-df.head()
-df['sentiment']=df['sentiment'].map({'positive':1,'negative':0})
-X=df['review']
-y=df['sentiment']
 
-X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.2, random_state=42,stratify=y)
+# -----------------------------
+# Page configuration
+# -----------------------------
+st.set_page_config(page_title="IMDB Sentiment Analysis", layout="centered")
 
-tfidf=TfidfVectorizer(stop_words="english",max_features=5000)
+st.title("🎬 IMDB Movie Review Sentiment Analysis")
+st.write("This app predicts whether a movie review is **Positive** or **Negative** using Naive Bayes.")
 
-X_train_tfidf=tfidf.fit_transform(X_train)
-X_test_tfidf=tfidf.transform(X_test)
+# -----------------------------
+# Load dataset
+# -----------------------------
+@st.cache_data
+def load_data():
+    df = pd.read_csv("imdb dataset.csv")  # keep dataset in same folder
+    df['sentiment'] = df['sentiment'].map({'positive': 1, 'negative': 0})
+    return df
 
-nb_model=MultinomialNB()
-nb_model.fit(X_train_tfidf,y_train)
-y_pred=nb_model.predict(X_test_tfidf)
-accuracy=accuracy_score(y_test,y_pred)
+df = load_data()
 
-print("Accuracy:",accuracy)
-print("Classification Report:\n",classification_report(y_test,y_pred))
-cm=confusion_matrix(y_test,y_pred)
+# -----------------------------
+# Train model
+# -----------------------------
+@st.cache_resource
+def train_model(df):
+    X = df['review']
+    y = df['sentiment']
 
-print("Accuracy:",accuracy)
-print("Classification Report:\n",classification_report(y_test,y_pred))
-cm=confusion_matrix(y_test,y_pred)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-plt.figure(figsize=(6,4))
-sns.heatmap(cm,annot=True,fmt="d",cmap="Blues",
-            xticklabels=["Negative","Positive"],
-            yticklabels=["Negative","Positive"])
-plt.xlabel("Predicted")
-plt.ylabel("Actual")
-plt.title("Confusion Matrix")
-plt.show()
+    tfidf = TfidfVectorizer(stop_words="english", max_features=5000)
+
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+
+    model = MultinomialNB()
+    model.fit(X_train_tfidf, y_train)
+
+    y_pred = model.predict(X_test_tfidf)
+
+    return model, tfidf, X_test, y_test, y_pred
+
+model, tfidf, X_test, y_test, y_pred = train_model(df)
+
+# -----------------------------
+# Model evaluation
+# -----------------------------
+st.subheader("📊 Model Performance")
+
+accuracy = accuracy_score(y_test, y_pred)
+st.write(f"**Accuracy:** {accuracy:.4f}")
+
+if st.checkbox("Show Classification Report"):
+    report = classification_report(y_test, y_pred, output_dict=True)
+    st.dataframe(pd.DataFrame(report).transpose())
+
+if st.checkbox("Show Confusion Matrix"):
+    cm = confusion_matrix(y_test, y_pred)
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Negative", "Positive"],
+        yticklabels=["Negative", "Positive"],
+        ax=ax
+    )
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+    ax.set_title("Confusion Matrix")
+    st.pyplot(fig)
+
+# -----------------------------
+# Sentiment prediction function
+# -----------------------------
 def predict_sentiment(review):
-  review_tfidf=tfidf.transform([review])
-  prediction=nb_model.predict(review_tfidf)
-  return "Positive" if prediction[0]==1 else "Negative"
-predict_sentiment("The movie was boring and a complete waste of time")
+    review_tfidf = tfidf.transform([review])
+    prediction = model.predict(review_tfidf)
+    return "Positive 😊" if prediction[0] == 1 else "Negative 😞"
+
+# -----------------------------
+# User input section
+# -----------------------------
+st.subheader("✍️ Enter a Movie Review")
+
+user_review = st.text_area(
+    "Type your review here:",
+    height=150,
+    placeholder="Example: The movie was boring and a complete waste of time..."
+)
+
+if st.button("Predict Sentiment"):
+    if user_review.strip() == "":
+        st.warning("Please enter a review.")
+    else:
+        result = predict_sentiment(user_review)
+        st.success(f"**Predicted Sentiment:** {result}")
