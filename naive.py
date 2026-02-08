@@ -10,26 +10,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # -----------------------------
-# Page configuration
+# Page config
 # -----------------------------
-st.set_page_config(page_title="IMDB Sentiment Analysis", layout="centered")
+st.set_page_config(page_title="IMDB Sentiment Analysis")
 
 st.title("🎬 IMDB Movie Review Sentiment Analysis")
-st.write("This app predicts whether a movie review is **Positive** or **Negative** using Naive Bayes.")
 
 # -----------------------------
-# Load dataset
+# Load Dataset
 # -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("imdb dataset.csv")  # keep dataset in same folder
+    df = pd.read_csv("imdb dataset.csv")
     df['sentiment'] = df['sentiment'].map({'positive': 1, 'negative': 0})
     return df
 
 df = load_data()
 
 # -----------------------------
-# Train model
+# Train Model
 # -----------------------------
 @st.cache_resource
 def train_model(df):
@@ -50,12 +49,12 @@ def train_model(df):
 
     y_pred = model.predict(X_test_tfidf)
 
-    return model, tfidf, X_test, y_test, y_pred
+    return model, tfidf, y_test, y_pred
 
-model, tfidf, X_test, y_test, y_pred = train_model(df)
+model, tfidf, y_test, y_pred = train_model(df)
 
 # -----------------------------
-# Model evaluation
+# Model Performance
 # -----------------------------
 st.subheader("📊 Model Performance")
 
@@ -85,7 +84,7 @@ if st.checkbox("Show Confusion Matrix"):
     st.pyplot(fig)
 
 # -----------------------------
-# Sentiment prediction function
+# Prediction Function
 # -----------------------------
 def predict_sentiment(review):
     review_tfidf = tfidf.transform([review])
@@ -93,14 +92,14 @@ def predict_sentiment(review):
     return "Positive 😊" if prediction[0] == 1 else "Negative 😞"
 
 # -----------------------------
-# User input section
+# User Input
 # -----------------------------
 st.subheader("✍️ Enter a Movie Review")
 
 user_review = st.text_area(
-    "Type your review here:",
+    "Type your review below:",
     height=150,
-    placeholder="Example: The movie was boring and a complete waste of time..."
+    placeholder="The movie was boring and a complete waste of time..."
 )
 
 if st.button("Predict Sentiment"):
@@ -109,3 +108,5 @@ if st.button("Predict Sentiment"):
     else:
         result = predict_sentiment(user_review)
         st.success(f"**Predicted Sentiment:** {result}")
+
+
