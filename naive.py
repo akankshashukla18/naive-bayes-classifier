@@ -15,31 +15,47 @@ import seaborn as sns
 st.set_page_config(page_title="IMDB Sentiment Analysis")
 
 st.title("🎬 IMDB Movie Review Sentiment Analysis")
+st.write("Naive Bayes + TF-IDF based sentiment prediction")
 
 # -----------------------------
-# Load Dataset
+# Create dataset inside code
 # -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("imdb dataset.csv")
-    df['sentiment'] = df['sentiment'].map({'positive': 1, 'negative': 0})
-    return df
+    data = {
+        "review": [
+            "The movie was fantastic and full of emotions",
+            "Absolutely loved the acting and the story",
+            "One of the best movies I have ever seen",
+            "The film was boring and too long",
+            "Worst movie, complete waste of time",
+            "Terrible acting and bad storyline",
+            "Amazing direction and great performance",
+            "I did not like the movie at all",
+            "The plot was weak and disappointing",
+            "A wonderful and inspiring movie"
+        ],
+        "sentiment": [
+            1, 1, 1, 0, 0, 0, 1, 0, 0, 1
+        ]
+    }
+    return pd.DataFrame(data)
 
 df = load_data()
 
 # -----------------------------
-# Train Model
+# Train model
 # -----------------------------
 @st.cache_resource
 def train_model(df):
-    X = df['review']
-    y = df['sentiment']
+    X = df["review"]
+    y = df["sentiment"]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    tfidf = TfidfVectorizer(stop_words="english", max_features=5000)
+    tfidf = TfidfVectorizer(stop_words="english")
 
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
@@ -54,12 +70,12 @@ def train_model(df):
 model, tfidf, y_test, y_pred = train_model(df)
 
 # -----------------------------
-# Model Performance
+# Model performance
 # -----------------------------
 st.subheader("📊 Model Performance")
 
 accuracy = accuracy_score(y_test, y_pred)
-st.write(f"**Accuracy:** {accuracy:.4f}")
+st.write(f"**Accuracy:** {accuracy:.2f}")
 
 if st.checkbox("Show Classification Report"):
     report = classification_report(y_test, y_pred, output_dict=True)
@@ -68,7 +84,7 @@ if st.checkbox("Show Classification Report"):
 if st.checkbox("Show Confusion Matrix"):
     cm = confusion_matrix(y_test, y_pred)
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(5, 3))
     sns.heatmap(
         cm,
         annot=True,
@@ -84,7 +100,7 @@ if st.checkbox("Show Confusion Matrix"):
     st.pyplot(fig)
 
 # -----------------------------
-# Prediction Function
+# Prediction function
 # -----------------------------
 def predict_sentiment(review):
     review_tfidf = tfidf.transform([review])
@@ -92,14 +108,14 @@ def predict_sentiment(review):
     return "Positive 😊" if prediction[0] == 1 else "Negative 😞"
 
 # -----------------------------
-# User Input
+# User input
 # -----------------------------
 st.subheader("✍️ Enter a Movie Review")
 
 user_review = st.text_area(
-    "Type your review below:",
-    height=150,
-    placeholder="The movie was boring and a complete waste of time..."
+    "Type your review:",
+    height=120,
+    placeholder="The movie was boring and a complete waste of time"
 )
 
 if st.button("Predict Sentiment"):
@@ -108,5 +124,7 @@ if st.button("Predict Sentiment"):
     else:
         result = predict_sentiment(user_review)
         st.success(f"**Predicted Sentiment:** {result}")
+
+
 
 
